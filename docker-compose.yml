@@ -1,0 +1,36 @@
+services:
+  todo-api:
+    build:
+      context: ./todo-api
+      target: production
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - TODO_SERVICE_URL=http://todo-service:3001
+    depends_on:
+      - todo-service
+
+  todo-service:
+    build:
+      context: ./todo-service
+      target: production
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=production
+      - PORT=3001
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      - redis
+
+  redis:
+    image: redis:alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
+volumes:
+  redis_data:

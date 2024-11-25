@@ -1,0 +1,17 @@
+# .dockerignore
+node_modules
+npm-debug.log
+yarn-debug.log
+yarn-error.log
+.git
+.env
+dist
+coverage
+.vscode
+.idea
+*.md
+.gitignore
+.prettier*
+.eslint*
+test
+docs
