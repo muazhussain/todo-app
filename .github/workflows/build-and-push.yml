@@ -1,13 +1,12 @@
-name: Build and Push Docker images
+name: Build, Push and Deploy
 
 on:
   push:
-    branches: [ prod]
+    branches: [ prod ]
 
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
-    
     steps:
       - uses: actions/checkout@v3
       
@@ -41,3 +40,31 @@ jobs:
             ${{ secrets.DOCKERHUB_USERNAME }}/todo-service:${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+  deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Copy k8s files to server
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          source: "k8s/*"
+          target: "/home/${{ secrets.SERVER_USER }}/todo-app"
+
+      - name: Deploy to k3s
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            kubectl apply -f /home/${{ secrets.SERVER_USER }}/todo-app/k8s/
+            kubectl rollout restart deployment/todo-api -n todo-app
+            kubectl rollout restart deployment/todo-service -n todo-app
+            kubectl rollout status deployment/todo-api -n todo-app
+            kubectl rollout status deployment/todo-service -n todo-app
